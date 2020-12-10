@@ -1,13 +1,12 @@
 #include "asm/inline_hook.h"
-#include <common/log.h>
 
 int (*oldStrcmp)(const char *, const char *);
 
 int myStrcmp(const char *s1, const char *s2) {
-    LOG_INFO("hooked");
+    printf("hooked\n");
 
     if (oldStrcmp) {
-        LOG_INFO("real result: %d", oldStrcmp(s1, s2));
+        printf("real result: %d\n", oldStrcmp(s1, s2));
     }
 
     return 0;
@@ -20,17 +19,17 @@ int main() {
     gInlineHook->hook((void *)strcmp, (void *)myStrcmp, (void **)&oldStrcmp);
 
     if (strcmp(s1, s2) == 0) {
-        LOG_INFO("equal");
+        printf("equal\n");
     } else {
-        LOG_INFO("not equal");
+        printf("not equal\n");
     }
 
     gInlineHook->unhook((void *)strcmp, (void *)oldStrcmp);
 
     if (strcmp(s1, s2) == 0) {
-        LOG_INFO("equal");
+        printf("equal\n");
     } else {
-        LOG_INFO("not equal");
+        printf("not equal\n");
     }
 
     return 0;
