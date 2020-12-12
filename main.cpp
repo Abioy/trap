@@ -1,4 +1,5 @@
 #include "asm/inline_hook.h"
+#include <cstring>
 
 int (*oldStrcmp)(const char *, const char *);
 
