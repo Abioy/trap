@@ -45,7 +45,7 @@ void CInlineHook::hook(void *address, void *replace, void **backup) {
 
     std::unique_ptr<char> escape(new char[tail + ESCAPE_SIZE]());
 
-    if (!setCodeWriteable(escape.get()))
+    if (!setCodeWriteable(escape.get(), tail + ESCAPE_SIZE))
         return;
 
     memcpy(escape.get(), address, tail);
@@ -53,7 +53,7 @@ void CInlineHook::hook(void *address, void *replace, void **backup) {
 
     *(void **)(escape.get() + tail + GUIDE) = (char *)address + tail;
 
-    if (!setCodeWriteable(address))
+    if (!setCodeWriteable(address, TRAP_SIZE))
         return;
 
     memcpy(address, TRAP_TEMPLATE, TRAP_SIZE);
@@ -63,7 +63,7 @@ void CInlineHook::hook(void *address, void *replace, void **backup) {
 }
 
 void CInlineHook::unhook(void *address, void *backup) {
-    if (!setCodeWriteable(address))
+    if (!setCodeWriteable(address, TRAP_SIZE))
         return;
 
     memcpy(address, backup, TRAP_SIZE);
@@ -71,10 +71,11 @@ void CInlineHook::unhook(void *address, void *backup) {
     delete [](char*)backup;
 }
 
-bool CInlineHook::setCodeReadonly(void *address) {
-    unsigned long start = ((unsigned long)address &~ ((mPagesize) - 1));
+bool CInlineHook::setCodeReadonly(void *address, unsigned long size) const {
+    unsigned long start = (unsigned long)address & ~(mPagesize - 1);
+    unsigned long end = ((unsigned long)address + size + mPagesize) & ~(mPagesize - 1);
 
-    if (mprotect((void *)start, mPagesize, PROT_READ | PROT_EXEC) < 0) {
+    if (mprotect((void *)start, end - start, PROT_READ | PROT_EXEC) < 0) {
         LOG_ERROR("set code page readonly attr failed");
         return false;
     }
@@ -82,10 +83,11 @@ bool CInlineHook::setCodeReadonly(void *address) {
     return true;
 }
 
-bool CInlineHook::setCodeWriteable(void *address) {
-    unsigned long start = ((unsigned long)address &~ ((mPagesize) - 1));
+bool CInlineHook::setCodeWriteable(void *address, unsigned long size) const {
+    unsigned long start = (unsigned long)address & ~(mPagesize - 1);
+    unsigned long end = ((unsigned long)address + size + mPagesize) & ~(mPagesize - 1);
 
-    if (mprotect((void *)start, mPagesize, PROT_READ | PROT_WRITE | PROT_EXEC) < 0) {
+    if (mprotect((void *)start, end - start, PROT_READ | PROT_WRITE | PROT_EXEC) < 0) {
         LOG_ERROR("set code page writeable attr failed");
         return false;
     }

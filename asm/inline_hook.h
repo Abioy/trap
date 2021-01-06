@@ -17,8 +17,8 @@ public:
     void unhook(void *address, void *backup);
 
 private:
-    bool setCodeReadonly(void *address);
-    bool setCodeWriteable(void *address);
+    bool setCodeReadonly(void *address, unsigned long size) const;
+    bool setCodeWriteable(void *address, unsigned long size) const;
 
 private:
     unsigned long mPagesize;
