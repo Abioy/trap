@@ -17,7 +17,8 @@ int main() {
     const char *s1 = "hello";
     const char *s2 = "world";
 
-    gInlineHook->hook((void *)strcmp, (void *)myStrcmp, (void **)&oldStrcmp);
+    if (!gInlineHook->hook((void *)strcmp, (void *)myStrcmp, (void **)&oldStrcmp))
+        return -1;
 
     if (strcmp(s1, s2) == 0) {
         printf("equal\n");
@@ -25,7 +26,8 @@ int main() {
         printf("not equal\n");
     }
 
-    gInlineHook->unhook((void *)strcmp, (void *)oldStrcmp);
+    if (!gInlineHook->unhook((void *)strcmp, (void *)oldStrcmp))
+        return -1;
 
     if (strcmp(s1, s2) == 0) {
         printf("equal\n");

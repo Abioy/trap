@@ -28,6 +28,11 @@ unsigned long CInlineHook::getCodeTail(void *address, unsigned long size) {
             return 0;
         }
 
+        if (instruction.attributes & ZYDIS_ATTRIB_IS_RELATIVE) {
+            LOG_ERROR("position relative instruction: %p", (char *)address + tail);
+            return 0;
+        }
+
         tail += instruction.length;
 
     } while (tail < size);
@@ -35,18 +40,18 @@ unsigned long CInlineHook::getCodeTail(void *address, unsigned long size) {
     return tail;
 }
 
-void CInlineHook::hook(void *address, void *replace, void **backup) {
+bool CInlineHook::hook(void *address, void *replace, void **backup) {
     unsigned long tail = getCodeTail(address, TRAP_SIZE);
 
     if (tail == 0) {
         LOG_ERROR("get code tail failed");
-        return;
+        return false;
     }
 
     std::unique_ptr<char> escape(new char[tail + ESCAPE_SIZE]());
 
     if (!setCodeWriteable(escape.get(), tail + ESCAPE_SIZE))
-        return;
+        return false;
 
     memcpy(escape.get(), address, tail);
     memcpy(escape.get() + tail, ESCAPE_TEMPLATE, ESCAPE_SIZE);
@@ -54,21 +59,30 @@ void CInlineHook::hook(void *address, void *replace, void **backup) {
     *(void **)(escape.get() + tail + GUIDE) = (char *)address + tail;
 
     if (!setCodeWriteable(address, TRAP_SIZE))
-        return;
+        return false;
 
     memcpy(address, TRAP_TEMPLATE, TRAP_SIZE);
     *(void **)((char *)address + GUIDE) = replace;
 
     *backup = escape.release();
+
+    return true;
 }
 
-void CInlineHook::unhook(void *address, void *backup) {
+bool CInlineHook::unhook(void *address, void *backup) {
+    if (memcmp(address, TRAP_TEMPLATE, GUIDE) != 0) {
+        LOG_ERROR("trap magic error");
+        return false;
+    }
+
     if (!setCodeWriteable(address, TRAP_SIZE))
-        return;
+        return false;
 
     memcpy(address, backup, TRAP_SIZE);
 
     delete [](char*)backup;
+
+    return true;
 }
 
 bool CInlineHook::setCodeReadonly(void *address, unsigned long size) const {

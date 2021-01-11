@@ -13,8 +13,8 @@ private:
     unsigned long getCodeTail(void *address, unsigned long size);
 
 public:
-    void hook(void *address, void *replace, void **backup);
-    void unhook(void *address, void *backup);
+    bool hook(void *address, void *replace, void **backup);
+    bool unhook(void *address, void *backup);
 
 private:
     bool setCodeReadonly(void *address, unsigned long size) const;
